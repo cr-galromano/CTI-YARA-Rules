@@ -1,0 +1,236 @@
+rule HKTL_Mimikatz_SkeletonKey_in_memory_Aug20_1 {
+   meta:
+      description = "Detects Mimikatz SkeletonKey in Memory"
+      author = "Florian Roth (Nextron Systems)"
+      reference = "https://twitter.com/sbousseaden/status/1292143504131600384?s=12"
+      date = "2020-08-09"
+      id = "e7c1c512-e944-5d87-ac57-cdc9ab7cf660"
+   strings:
+      $x1 = { 60 ba 4f ca c7 44 24 34 dc 46 6c 7a c7 44 24 38 
+              03 3c 17 81 c7 44 24 3c 94 c0 3d f6 }
+   condition:
+      1 of them
+}
+
+
+rule HKTL_mimikatz_icon {
+    meta:
+        description = "Detects mimikatz icon in PE file"
+        license = "Detection Rule License 1.1 https://github.com/SigmaHQ/Detection-Rule-License"
+        author = "Arnim Rupp"
+        reference = "https://blog.gentilkiwi.com/mimikatz"
+        date = "2023-02-18"
+        score = 60
+        hash1 = "61c0810a23580cf492a6ba4f7654566108331e7a4134c968c2d6a05261b2d8a1"
+        hash2 = "1c3f584164ef595a37837701739a11e17e46f9982fdcee020cf5e23bad1a0925"
+        hash3 = "c6bb98b24206228a54493274ff9757ce7e0cbb4ab2968af978811cc4a98fde85"
+        hash4 = "721d3476cdc655305902d682651fffbe72e54a97cd7e91f44d1a47606bae47ab"
+        hash5 = "c0f3523151fa307248b2c64bdaac5f167b19be6fccff9eba92ac363f6d5d2595"
+        id = "2a5ea476-a30d-5eac-b57a-3fb49386c046"
+    strings:
+        $ico = {79 e1 d7 ff 7e e5 db ff 7f e8 dc ff 85 eb dd ff ba ff f1 ff 66 a0 b6 ff 01 38 61 ff 22 50 75 c3}
+    condition:
+        uint16(0) == 0x5A4D and
+        $ico and
+        filesize < 10MB
+}
+
+
+rule INDICATOR_SUSPICIOUS_EXE_SQLQuery_ConfidentialDataStore {
+    meta:
+        author = "ditekSHen"
+        description = "Detects executables containing SQL queries to confidential data stores. Observed in infostealers"
+    strings:
+        $select = "select " ascii wide nocase
+        $table1 = " from credit_cards" ascii wide nocase
+        $table2 = " from logins" ascii wide nocase
+        $table3 = " from cookies" ascii wide nocase
+        $table4 = " from moz_cookies" ascii wide nocase
+        $table5 = " from moz_formhistory" ascii wide nocase
+        $table6 = " from moz_logins" ascii wide nocase
+        $column1 = "name" ascii wide nocase
+        $column2 = "password_value" ascii wide nocase
+        $column3 = "encrypted_value" ascii wide nocase
+        $column4 = "card_number_encrypted" ascii wide nocase
+        $column5 = "isHttpOnly" ascii wide nocase
+    condition:
+        uint16(0) == 0x5a4d and 2 of ($table*) and 2 of ($column*) and $select
+}
+
+rule Mimikatz_Gen_Strings {
+   meta:
+      description = "Detects Mimikatz by using some special strings"
+      license = "Detection Rule License 1.1 https://github.com/Neo23x0/signature-base/blob/master/LICENSE"
+      author = "Florian Roth (Nextron Systems)"
+      reference = "Internal Research"
+      date = "2017-06-19"
+      super_rule = 1
+      hash1 = "058cc8b3e4e4055f3be460332a62eb4cbef41e3a7832aceb8119fd99fea771c4"
+      hash2 = "eefd4c038afa0e80cf6521c69644e286df08c0883f94245902383f50feac0f85"
+      hash3 = "f35b589c1cc1c98c4c4a5123fd217bdf0d987c00d2561992cbfb94bd75920159"
+      id = "3f4ab5d7-5a9f-55f0-9dda-e2975df582a0"
+   strings:
+      $s1 = "[*] '%s' service already started" fullword wide
+      $s2 = "** Security Callback! **" fullword wide
+      $s3 = "Try to export a software CA to a crypto (virtual)hardware" fullword wide
+      $s4 = "enterpriseadmin" fullword wide
+      $s5 = "Ask debug privilege" fullword wide
+      $s6 = "Injected =)" fullword wide
+      $s7 = "** SAM ACCOUNT **" fullword wide
+   condition:
+      ( uint16(0) == 0x5a4d and filesize < 12000KB and 1 of them )
+}
+
+
+rule Mimikatz_Strings {
+   meta:
+      description = "Detects Mimikatz strings"
+      license = "Detection Rule License 1.1 https://github.com/Neo23x0/signature-base/blob/master/LICENSE"
+      author = "Florian Roth (Nextron Systems)"
+      reference = "not set"
+      date = "2016-06-08"
+      score = 65
+      id = "d8f63b71-c66c-5c10-9268-2d8970f7c8a1"
+   strings:
+      $x1 = "sekurlsa::logonpasswords" fullword wide ascii
+      $x2 = "List tickets in MIT/Heimdall ccache" fullword ascii wide
+      $x3 = "kuhl_m_kerberos_ptt_file ; LsaCallKerberosPackage %08x" fullword ascii wide
+      $x4 = "* Injecting ticket :" fullword wide ascii
+      $x5 = "mimidrv.sys" fullword wide ascii
+      $x6 = "Lists LM & NTLM credentials" fullword wide ascii
+      $x7 = "\\_ kerberos -" wide ascii
+      $x8 = "* unknow   :" fullword wide ascii
+      $x9 = "\\_ *Password replace ->" wide ascii
+      $x10 = "KIWI_MSV1_0_PRIMARY_CREDENTIALS KO" ascii wide
+      $x11 = "\\\\.\\mimidrv" wide ascii
+      $x12 = "Switch to MINIDUMP :" fullword wide ascii
+      $x13 = "[masterkey] with password: %s (%s user)" fullword wide
+      $x14 = "Clear screen (doesn't work with redirections, like PsExec)" fullword wide
+      $x15 = "** Session key is NULL! It means allowtgtsessionkey is not set to 1 **" fullword wide
+      $x16 = "[masterkey] with DPAPI_SYSTEM (machine, then user): " fullword wide
+   condition:
+      (
+         ( uint16(0) == 0x5a4d and 1 of ($x*) ) or
+         ( 3 of them )
+      )
+      /* exclude false positives */
+      and not pe.imphash() == "77eaeca738dd89410a432c6bd6459907"
+}
+
+
+rule Windows_Hacktool_Mimikatz_1388212a {
+    meta:
+        author = "Elastic Security"
+        id = "1388212a-2146-4565-b93d-4555a110364f"
+        fingerprint = "dbbdc492c07e3b95d677044751ee4365ec39244e300db9047ac224029dfe6ab7"
+        creation_date = "2021-04-13"
+        last_modified = "2021-08-23"
+        threat_name = "Windows.Hacktool.Mimikatz"
+        reference_sample = "66b4a0681cae02c302a9b6f1d611ac2df8c519d6024abdb506b4b166b93f636a"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $a1 = "   Password: %s" wide fullword
+        $a2 = "  * Session Key   : 0x%08x - %s" wide fullword
+        $a3 = "   * Injecting ticket : " wide fullword
+        $a4 = " ## / \\ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )" wide fullword
+        $a5 = "Remove mimikatz driver (mimidrv)" wide fullword
+        $a6 = "mimikatz(commandline) # %s" wide fullword
+        $a7 = "  Password: %s" wide fullword
+        $a8 = " - SCardControl(FEATURE_CCID_ESC_COMMAND)" wide fullword
+        $a9 = " * to 0 will take all 'cmd' and 'mimikatz' process" wide fullword
+        $a10 = "** Pass The Ticket **" wide fullword
+        $a11 = "-> Ticket : %s" wide fullword
+        $a12 = "Busylight Lync model (with bootloader)" wide fullword
+        $a13 = "mimikatz.log" wide fullword
+        $a14 = "Log mimikatz input/output to file" wide fullword
+        $a15 = "ERROR kuhl_m_dpapi_masterkey ; kull_m_dpapi_unprotect_domainkey_with_key" wide fullword
+        $a16 = "ERROR kuhl_m_lsadump_dcshadow ; unable to start the server: %08x" wide fullword
+        $a17 = "ERROR kuhl_m_sekurlsa_pth ; GetTokenInformation (0x%08x)" wide fullword
+        $a18 = "ERROR mimikatz_doLocal ; \"%s\" module not found !" wide fullword
+        $a19 = "Install and/or start mimikatz driver (mimidrv)" wide fullword
+        $a20 = "Target: %hhu (0x%02x - %s)" wide fullword
+        $a21 = "mimikatz Ho, hey! I'm a DC :)" wide fullword
+        $a22 = "mimikatz service (mimikatzsvc)" wide fullword
+        $a23 = "[masterkey] with DPAPI_SYSTEM (machine, then user): " wide fullword
+        $a24 = "$http://blog.gentilkiwi.com/mimikatz 0" ascii fullword
+        $a25 = " * Username : %wZ" wide fullword
+    condition:
+        3 of ($a*)
+}
+
+
+}
+
+rule Windows_Hacktool_Mimikatz_674fd079 {
+    meta:
+        author = "Elastic Security"
+        id = "674fd079-f7fe-4d89-87e7-ac11aa21c9ed"
+        fingerprint = "b8f71996180e5f03c10e39eb36b2084ecaff78d7af34bd3d0d75225d2cfad765"
+        creation_date = "2021-04-14"
+        last_modified = "2021-08-23"
+        description = "Detection for default mimikatz memssp module"
+        threat_name = "Windows.Hacktool.Mimikatz"
+        reference_sample = "66b4a0681cae02c302a9b6f1d611ac2df8c519d6024abdb506b4b166b93f636a"
+        severity = 99
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $a1 = { 44 30 00 38 00 }
+        $a2 = { 48 78 00 3A 00 }
+        $a3 = { 4C 25 00 30 00 }
+        $a4 = { 50 38 00 78 00 }
+        $a5 = { 54 5D 00 20 00 }
+        $a6 = { 58 25 00 77 00 }
+        $a7 = { 5C 5A 00 5C 00 }
+        $a8 = { 60 25 00 77 00 }
+        $a9 = { 64 5A 00 09 00 }
+        $a10 = { 6C 5A 00 0A 00 }
+        $a11 = { 68 25 00 77 00 }
+        $a12 = { 68 25 00 77 00 }
+        $a13 = { 6C 5A 00 0A 00 }
+        $b1 = { 6D 69 6D 69 C7 84 24 8C 00 00 00 6C 73 61 2E C7 84 24 90 00 00 00 6C 6F 67 }
+    condition:
+        all of ($a*) or $b1
+}
+
+
+rule INDICATOR_TOOL_PWS_Mimikatz {
+    meta:
+        author = "ditekSHen"
+        description = "Detects Mimikatz"
+    strings:
+        $s1 = "mimilib.dll" ascii
+        $s2 = "mimidrv.sys" ascii
+        $s3 = "mimikatz.exe" ascii
+        $s4 = "\\mimidrv.pdb" ascii
+        $s5 = "mimikatz" ascii
+        $s6 = { 6d 00 69 00 6d 00 69 00 6b 00 61 00 74 00 7a }  // m|00|i|00|m|00|i|00|k|00|a|00|t|00|z     
+        $s7 = { 5c 00 6d 00 69 00 6d 00 69 00 64 00 72 00 76 }  // \|00|m|00|i|00|m|00i|00|d|00|r|00|v
+        $s8 = { 6d 00 69 00 6d 00 69 00 64 00 72 00 76 }        // m|00|i|00|m|00i|00|d|00|r|00|v
+        $s9 = "Lecture KIWI_MSV1_0_" ascii
+        $s10 = "Search for LSASS process" ascii
+
+        $f1 = "SspCredentialList" ascii
+        $f2 = "KerbGlobalLogonSessionTable" ascii
+        $f3 = "LiveGlobalLogonSessionList" ascii
+        $f4 = "TSGlobalCredTable" ascii
+        $f5 = "g_MasterKeyCacheList" ascii
+        $f6 = "l_LogSessList" ascii
+        $f7 = "lsasrv!" ascii
+        $f8 = "SekurLSA" ascii
+        $f9 = /Cached(Unlock|Interative|RemoteInteractive)/ ascii
+
+        // https://github.com/gentilkiwi/mimikatz/blob/master/kiwi_passwords.yar
+        $dll_1 = { c7 0? 00 00 01 00 [4-14] c7 0? 01 00 00 00 }
+		$dll_2 = { c7 0? 10 02 00 00 ?? 89 4? }
+        $sys_x86 = { a0 00 00 00 24 02 00 00 40 00 00 00 [0-4] b8 00 00 00 6c 02 00 00 40 00 00 00 }
+		$sys_x64 = { 88 01 00 00 3c 04 00 00 40 00 00 00 [0-4] e8 02 00 00 f8 02 00 00 40 00 00 00 }
+    condition:
+        uint16(0) == 0x5a4d and (2 of ($*) or 3 of ($f*) or all of ($dll_*) or any of ($sys_*))
+}
